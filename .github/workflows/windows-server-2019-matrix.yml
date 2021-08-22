@@ -7,8 +7,7 @@ jobs:
     runs-on: windows-2019
     strategy:
       matrix:
-        #package: [dirent, eigen3, fontconfig, freetype, harfbuzz, libepoxy, libogg, libpng, opus, opusfile, qt5-base, qt5-declarative, qt5-quickcontrols, sdl2, sdl2-image]
-        package: [dirent, eigen3, freetype, harfbuzz, libepoxy, libogg, libpng, opus, opusfile, sdl2, sdl2-image]
+        package: [dirent, eigen3, fontconfig, freetype, harfbuzz, libepoxy, libogg, libpng, opus, opusfile, qt5-base, qt5-declarative, qt5-quickcontrols, sdl2, sdl2-image]
         triplet: [x86-windows, x64-windows]
     steps:
     - uses: actions/checkout@v2
@@ -44,28 +43,75 @@ jobs:
 
   collect:
     runs-on: windows-2019
-    strategy:
-      matrix:
-        triplet: [x86-windows, x64-windows]
+    needs: build
     steps:
     - uses: actions/checkout@v2
       with:
         submodules: recursive
         path: source
-    - name: Make package folder
-      run: mkdir packages
+    - name: Make downloads folder
+      run: |
+        mkdir downloads
       shell: pwsh
     - name: Download built packages
       uses: actions/download-artifact@v2
       with:
-        path: ${{ format('{0}/packages', github.workspace) }}
+        path: ${{ format('{0}/downloads', github.workspace) }}
+    - name: Move
+      run: |
+        mkdir packages
+        $zipfiles = Get-ChildItem -Path ./downloads -Recurse -File -Include *.zip
+        foreach($zip in $zipfiles){
+          Copy-Item -Path $zip -Destination ./packages
+        }
+        Remove-Item ./downloads -Force -Recurse
+      shell: pwsh
     - name: Decompress
       run: |
-        cd packages
-        $zipfiles = Get-ChildItem -Path . -Recurse -File -Include *.zip
+        $zipfiles = Get-ChildItem -Path ./packages -Recurse -File -Include *.zip
         foreach($zip in $zipfiles){
-          Expand-Archive $zip -PassThru
+          $current = Split-Path -Path $zip -Parent
+          Expand-Archive $zip -DestinationPath $current
           Remove-Item $zip
         }
-        Get-ChildItem -Path . -Recurse -File
+        echo (Get-ChildItem -Path ./packages -Recurse -File).FullName
       shell: pwsh
+    - name: Merge
+      run: |
+        $package_dirs = Get-ChildItem -Path ./packages -Directory
+        $flavours = "x86-windows", "x64-windows"
+        foreach($flavour in $flavours){
+          $dir_name = "merge-$($flavour)"
+          mkdir $dir_name
+          cd $dir_name
+          foreach($package in $package_dirs){
+            $package_name = Split-Path -Path $package -Leaf
+            if(-Not $package_name.EndsWith($flavour)){
+              echo "Skipping $($package_name)"
+              continue
+            }
+
+            Copy-Item -Path $package\* -Recurse -Destination . -Force
+          }
+          echo (Get-ChildItem -Path . -Recurse -File).FullName
+          cd ..
+          $file_name = $dir_name
+          $file_name += ".zip"
+          Compress-Archive -Path $dir_name -DestinationPath $file_name
+        }
+      shell: pwsh
+
+    - name: Publish dependency bundles
+      uses: actions/upload-artifact@v2.2.4
+      with:
+        name: openage-dep-x86-windows.zip
+        path: ./merge-x86-windows.zip
+        if-no-files-found: error
+        retention-days: 30
+    - name: Publish dependency bundles
+      uses: actions/upload-artifact@v2.2.4
+      with:
+        name: openage-dep-x64-windows.zip
+        path: ./merge-x64-windows.zip
+        if-no-files-found: error
+        retention-days: 30
