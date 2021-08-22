@@ -21,13 +21,31 @@ jobs:
       with:
         python-version: '3.8'
         architecture: 'x64'
-    - name: Install dependencies [vcpkg]
+    - name: Install dependencies [1/2]
       run: |
         vcpkg install dirent eigen3 fontconfig freetype harfbuzz libepoxy libogg libpng opus opusfile --triplet=$Env:VCPKG_TRIPLET
       shell: pwsh
+    - name: Clear build files
+      run: |
+        $buildtree = Join-Path $Env:VCPKG_ROOT buildtrees
+        $download = Join-Path $Env:VCPKG_ROOT downloads
+        Remove-Item -Path $buildtree -Recurse
+        Remove-Item -Path $download -Recurse
+      shell: pwsh
+    - name: Install dependencies [2/2]
+      run: |
+        vcpkg install qt5-base qt5-declarative qt5-quickcontrols --triplet=$Env:VCPKG_TRIPLET
+      shell: pwsh
+    - name: Clear build files
+      run: |
+        $buildtree = Join-Path $Env:VCPKG_ROOT buildtrees
+        $download = Join-Path $Env:VCPKG_ROOT downloads
+        Remove-Item -Path $buildtree -Recurse
+        Remove-Item -Path $download -Recurse
+      shell: pwsh
     - name: Export dependencies
       run: |
-        vcpkg export dirent eigen3 fontconfig freetype harfbuzz libepoxy libogg libpng opus opusfile --triplet=x64-windows --7zip --output-dir="." --output="package.7z"
+        vcpkg export dirent eigen3 fontconfig freetype harfbuzz libepoxy libogg libpng opus opusfile qt5-base qt5-declarative qt5-quickcontrols --triplet=x64-windows --7zip --output-dir="." --output="package.7z"
         dir
       shell: pwsh
     - name: Publish exported dependencies
