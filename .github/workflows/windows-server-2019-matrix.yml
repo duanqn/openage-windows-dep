@@ -73,7 +73,7 @@ jobs:
         $package_dirs = Get-ChildItem -Path ./packages -Directory
         $flavours = "x86-windows", "x64-windows"
         foreach($flavour in $flavours){
-          $dir_name = "merge-$(flavour)"
+          $dir_name = "merge-$($flavour)"
           mkdir $dir_name
           cd $dir_name
           foreach($package in $package_dirs){
