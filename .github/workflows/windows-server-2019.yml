@@ -1,0 +1,39 @@
+name: Windows Server 2019 CI
+
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: windows-2019
+    env:
+      VCPKG_TRIPLET: x64-windows
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        path: source
+    - name: Inspect environment
+      run: |
+        vswhere -latest
+      shell: pwsh
+    - name: Setup Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.8'
+        architecture: 'x64'
+    - name: Install dependencies [vcpkg]
+      run: |
+        vcpkg install dirent eigen3 fontconfig freetype harfbuzz libepoxy libogg libpng opus opusfile --triplet=$Env:VCPKG_TRIPLET
+      shell: pwsh
+    - name: Export dependencies
+      run: |
+        vcpkg export dirent eigen3 fontconfig freetype harfbuzz libepoxy libogg libpng opus opusfile --triplet=x64-windows --7zip --output-dir="." --output="package.7z"
+        dir
+      shell: pwsh
+    - name: Publish exported dependencies
+      uses: actions/upload-artifact@v2.2.4
+      with:
+        name: openage-dependency
+        path: './package.7z'
+        if-no-files-found: error
+        retention-days: 30
