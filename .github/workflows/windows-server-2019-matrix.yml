@@ -58,13 +58,14 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         path: ${{ format('{0}/downloads', github.workspace) }}
-    - name: Decompress
+    - name: Move
       run: |
         mkdir packages
         $zipfiles = Get-ChildItem -Path ./downloads -Recurse -File -Include *.zip
         foreach($zip in $zipfiles){
           Copy-Item -Path $zip -Destination ./packages
         }
+        Remove-Item ./downloads -Force -Recurse
       shell: pwsh
     - name: Decompress
       run: |
@@ -95,7 +96,9 @@ jobs:
             Copy-Item -Path $package -Recurse -Destination . -Force
           }
           cd ..
-          Compress-Archive -Path $dir_name -DestinationPath "$($dir_name).zip"
+          $file_name = $dir_name
+          $file_name += ".zip"
+          Compress-Archive -Path $dir_name -DestinationPath $file_name
         }
 
         dir
