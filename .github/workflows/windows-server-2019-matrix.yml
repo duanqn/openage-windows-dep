@@ -44,6 +44,7 @@ jobs:
 
   collect:
     runs-on: windows-2019
+    needs: build
     strategy:
       matrix:
         triplet: [x86-windows, x64-windows]
