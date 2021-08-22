@@ -69,13 +69,13 @@ jobs:
       shell: pwsh
     - name: Decompress
       run: |
-        $zipfiles = Get-ChildItem -Path ./packages -File -Include *.zip
+        $zipfiles = Get-ChildItem -Path ./packages -Recurse -File -Include *.zip
         foreach($zip in $zipfiles){
           $current = Split-Path -Path $zip -Parent
           Expand-Archive $zip -DestinationPath $current
           Remove-Item $zip
         }
-        echo (Get-ChildItem -Path . -Recurse -File).FullName
+        echo (Get-ChildItem -Path ./packages -Recurse -File).FullName
       shell: pwsh
     - name: Merge
       run: |
@@ -94,13 +94,12 @@ jobs:
 
             Copy-Item -Path $package -Recurse -Destination . -Force
           }
+          echo (Get-ChildItem -Path . -Recurse -File).FullName
           cd ..
           $file_name = $dir_name
           $file_name += ".zip"
           Compress-Archive -Path $dir_name -DestinationPath $file_name
         }
-
-        dir
       shell: pwsh
 
     - name: Publish dependency bundles
