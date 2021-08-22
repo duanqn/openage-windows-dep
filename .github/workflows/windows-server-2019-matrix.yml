@@ -1,0 +1,49 @@
+name: Windows Server 2019 CI [Matrix]
+
+on: [push, workflow_dispatch]
+
+jobs:
+  build-1:
+    runs-on: windows-2019
+    strategy:
+      matrix:
+        package: [dirent, eigen3, fontconfig, freetype, harfbuzz, libepoxy, libogg, libpng, opus, opusfile, qt5-base, qt5-declarative, qt5-quickcontrols, sdl2, sdl2-image]
+        triplet: [x86-windows, x64-windows]
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        path: source
+    - name: Inspect environment
+      run: |
+        vswhere -latest
+      shell: pwsh
+    - name: ${{ format('Install package {0}', matrix.package) }}
+      run: |
+        vcpkg install $PACKAGE --triplet=$TRIPLET
+      env:
+        PACKAGE: ${{ matrix.package }}
+        TRIPLET: ${{ matrix.triplet }}
+      shell: pwsh
+    - name: Clear build files
+      run: |
+        $buildtree = Join-Path $Env:VCPKG_ROOT buildtrees
+        $download = Join-Path $Env:VCPKG_ROOT downloads
+        Remove-Item -Path $buildtree -Recurse
+        Remove-Item -Path $download -Recurse
+      shell: pwsh
+    - name: Export dependencies
+      run: |
+        vcpkg export $PACKAGE --triplet=$TRIPLET --7zip --output-dir="." --output="package-$PACKAGE"
+        dir
+      env:
+        PACKAGE: ${{ matrix.package }}
+        TRIPLET: ${{ matrix.triplet }}
+      shell: pwsh
+    - name: Publish exported dependencies
+      uses: actions/upload-artifact@v2.2.4
+      with:
+        name: ${{ format('openage-dep-{0}.7z', matrix.package) }}
+        path: ${{ format('./package-{0}.7z', matrix.package) }}
+        if-no-files-found: error
+        retention-days: 30
