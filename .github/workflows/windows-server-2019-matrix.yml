@@ -8,7 +8,7 @@ jobs:
     strategy:
       matrix:
         #package: [dirent, eigen3, fontconfig, freetype, harfbuzz, libepoxy, libogg, libpng, opus, opusfile, qt5-base, qt5-declarative, qt5-quickcontrols, sdl2, sdl2-image]
-        package: [dirent, eigen3, freetype, harfbuzz, libepoxy, libogg, libpng, opus, opusfile, sdl2, sdl2-image]
+        package: [dirent, eigen3, freetype, libepoxy, libogg, libpng, opus, opusfile, sdl2, sdl2-image]
         triplet: [x86-windows, x64-windows]
     steps:
     - uses: actions/checkout@v2
@@ -45,9 +45,6 @@ jobs:
   collect:
     runs-on: windows-2019
     needs: build
-    strategy:
-      matrix:
-        triplet: [x86-windows, x64-windows]
     steps:
     - uses: actions/checkout@v2
       with:
@@ -65,8 +62,45 @@ jobs:
         cd packages
         $zipfiles = Get-ChildItem -Path . -Recurse -File -Include *.zip
         foreach($zip in $zipfiles){
-          Expand-Archive $zip -PassThru
+          $current = Split-Path -Path $zip -Parent
+          Expand-Archive $zip -DestinationPath $current -PassThru
           Remove-Item $zip
         }
         Get-ChildItem -Path . -Recurse -File
       shell: pwsh
+    - name: Merge
+      run: |
+        $package_dirs = Get-ChildItem -Path ./packages -Directory
+        $flavours = "x86-windows", "x64-windows"
+        foreach($flavour in $flavours){
+          $dir_name = "merge-$(flavour)"
+          mkdir $dir_name
+          cd $dir_name
+          foreach($package in $package_dirs){
+            $package_name = Split-Path -Path $package -Leaf
+            if(-Not $package_name.EndsWith($flavour)){
+              continue
+            }
+
+            Copy-Item -Path $package -Recurse -Destination . -Force
+          }
+          cd ..
+          Compress-Archive -Path $dir_name -DestinationPath "$($dir_name).zip"
+        }
+
+      shell: pwsh
+
+    - name: Publish dependency bundles
+      uses: actions/upload-artifact@v2.2.4
+      with:
+        name: openage-dep-x86-windows.zip
+        path: ./merge-x86-windows.zip
+        if-no-files-found: error
+        retention-days: 30
+    - name: Publish dependency bundles
+      uses: actions/upload-artifact@v2.2.4
+      with:
+        name: openage-dep-x64-windows.zip
+        path: ./merge-x64-windows.zip
+        if-no-files-found: error
+        retention-days: 30
