@@ -20,7 +20,7 @@ jobs:
       shell: pwsh
     - name: ${{ format('Install package {0}', matrix.package) }}
       run: |
-        vcpkg install $PACKAGE --triplet=$TRIPLET
+        vcpkg install $Env:PACKAGE --triplet=$Env:TRIPLET
       env:
         PACKAGE: ${{ matrix.package }}
         TRIPLET: ${{ matrix.triplet }}
@@ -34,7 +34,7 @@ jobs:
       shell: pwsh
     - name: Export dependencies
       run: |
-        vcpkg export $PACKAGE --triplet=$TRIPLET --7zip --output-dir="." --output="package-$PACKAGE"
+        vcpkg export $Env:PACKAGE --triplet=$Env:TRIPLET --7zip --output-dir="." --output="package-$Env:PACKAGE-$Env:TRIPLET"
         dir
       env:
         PACKAGE: ${{ matrix.package }}
@@ -43,7 +43,7 @@ jobs:
     - name: Publish exported dependencies
       uses: actions/upload-artifact@v2.2.4
       with:
-        name: ${{ format('openage-dep-{0}.7z', matrix.package) }}
-        path: ${{ format('./package-{0}.7z', matrix.package) }}
+        name: ${{ format('openage-dep.{0}.{1}.7z', matrix.package, matrix.triplet) }}
+        path: ${{ format('./package-{0}-{1}.7z', matrix.package, matrix.triplet) }}
         if-no-files-found: error
         retention-days: 30
