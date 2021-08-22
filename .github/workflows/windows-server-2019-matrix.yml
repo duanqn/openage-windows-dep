@@ -3,11 +3,12 @@ name: Windows Server 2019 CI [Matrix]
 on: [push, workflow_dispatch]
 
 jobs:
-  build-1:
+  build:
     runs-on: windows-2019
     strategy:
       matrix:
-        package: [dirent, eigen3, fontconfig, freetype, harfbuzz, libepoxy, libogg, libpng, opus, opusfile, qt5-base, qt5-declarative, qt5-quickcontrols, sdl2, sdl2-image]
+        #package: [dirent, eigen3, fontconfig, freetype, harfbuzz, libepoxy, libogg, libpng, opus, opusfile, qt5-base, qt5-declarative, qt5-quickcontrols, sdl2, sdl2-image]
+        package: [dirent, eigen3, freetype, harfbuzz, libepoxy, libogg, libpng, opus, opusfile, sdl2, sdl2-image]
         triplet: [x86-windows, x64-windows]
     steps:
     - uses: actions/checkout@v2
@@ -27,7 +28,7 @@ jobs:
       shell: pwsh
     - name: Export dependencies
       run: |
-        vcpkg export $Env:PACKAGE --triplet=$Env:TRIPLET --7zip --output-dir="." --output="package-$Env:PACKAGE-$Env:TRIPLET"
+        vcpkg export $Env:PACKAGE --triplet=$Env:TRIPLET --zip --output-dir="." --output="package-$Env:PACKAGE-$Env:TRIPLET"
         dir
       env:
         PACKAGE: ${{ matrix.package }}
@@ -36,7 +37,35 @@ jobs:
     - name: Publish exported dependencies
       uses: actions/upload-artifact@v2.2.4
       with:
-        name: ${{ format('openage-dep.{0}.{1}.7z', matrix.package, matrix.triplet) }}
-        path: ${{ format('./package-{0}-{1}.7z', matrix.package, matrix.triplet) }}
+        name: ${{ format('openage-dep.{0}.{1}.zip', matrix.package, matrix.triplet) }}
+        path: ${{ format('./package-{0}-{1}.zip', matrix.package, matrix.triplet) }}
         if-no-files-found: error
         retention-days: 30
+
+  collect:
+    runs-on: windows-2019
+    strategy:
+      matrix:
+        triplet: [x86-windows, x64-windows]
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        path: source
+    - name: Make package folder
+      run: mkdir packages
+      shell: pwsh
+    - name: Download built packages
+      uses: actions/download-artifact@v2
+      with:
+        path: ${{ format('{0}/packages', github.workspace) }}
+    - name: Decompress
+      run: |
+        cd packages
+        $zipfiles = Get-ChildItem -Path . -Recurse -File -Include *.zip
+        foreach($zip in $zipfiles){
+          Expand-Archive $zip -PassThru
+          Remove-Item $zip
+        }
+        Get-ChildItem -Path . -Recurse -File
+      shell: pwsh
