@@ -50,17 +50,26 @@ jobs:
       with:
         submodules: recursive
         path: source
-    - name: Make package folder
-      run: mkdir packages
+    - name: Make downloads folder
+      run: |
+        mkdir downloads
       shell: pwsh
     - name: Download built packages
       uses: actions/download-artifact@v2
       with:
-        path: ${{ format('{0}/packages', github.workspace) }}
+        path: ${{ format('{0}/downloads', github.workspace) }}
+    - name: Decompress
+      run: |
+        mkdir packages
+        $zipfiles = Get-ChildItem -Path ./downloads -Recurse -File -Include *.zip
+        foreach($zip in $zipfiles){
+          Copy-Item -Path $zip -Destination ./packages
+        }
+      shell: pwsh
     - name: Decompress
       run: |
         cd packages
-        $zipfiles = Get-ChildItem -Path . -Recurse -File -Include *.zip
+        $zipfiles = Get-ChildItem -Path . -File -Include *.zip
         foreach($zip in $zipfiles){
           $current = Split-Path -Path $zip -Parent
           Expand-Archive $zip -DestinationPath $current -PassThru
@@ -79,6 +88,7 @@ jobs:
           foreach($package in $package_dirs){
             $package_name = Split-Path -Path $package -Leaf
             if(-Not $package_name.EndsWith($flavour)){
+              echo "Skipping $($package_name)"
               continue
             }
 
@@ -88,6 +98,7 @@ jobs:
           Compress-Archive -Path $dir_name -DestinationPath "$($dir_name).zip"
         }
 
+        dir
       shell: pwsh
 
     - name: Publish dependency bundles
