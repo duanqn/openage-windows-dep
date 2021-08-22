@@ -25,13 +25,6 @@ jobs:
         PACKAGE: ${{ matrix.package }}
         TRIPLET: ${{ matrix.triplet }}
       shell: pwsh
-    - name: Clear build files
-      run: |
-        $buildtree = Join-Path $Env:VCPKG_ROOT buildtrees
-        $download = Join-Path $Env:VCPKG_ROOT downloads
-        Remove-Item -Path $buildtree -Recurse
-        Remove-Item -Path $download -Recurse
-      shell: pwsh
     - name: Export dependencies
       run: |
         vcpkg export $Env:PACKAGE --triplet=$Env:TRIPLET --7zip --output-dir="." --output="package-$Env:PACKAGE-$Env:TRIPLET"
