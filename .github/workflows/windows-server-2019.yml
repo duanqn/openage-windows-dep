@@ -40,7 +40,7 @@ jobs:
       shell: pwsh
     - name: Export dependencies
       run: |
-        vcpkg export dirent eigen3 fontconfig freetype harfbuzz libepoxy libogg libpng opus opusfile qt5-base qt5-declarative qt5-quickcontrols --triplet=x64-windows --7zip --output-dir="." --output="package-1.7z"
+        vcpkg export dirent eigen3 fontconfig freetype harfbuzz libepoxy libogg libpng opus opusfile qt5-base qt5-declarative qt5-quickcontrols --triplet=x64-windows --7zip --output-dir="." --output="package-1"
         dir
       shell: pwsh
     - name: Publish exported dependencies
@@ -76,7 +76,7 @@ jobs:
       shell: pwsh
     - name: Export dependencies
       run: |
-        vcpkg export qt5-base qt5-declarative qt5-quickcontrols sdl2 sdl2-image --triplet=x64-windows --7zip --output-dir="." --output="package-2.7z"
+        vcpkg export qt5-base qt5-declarative qt5-quickcontrols sdl2 sdl2-image --triplet=x64-windows --7zip --output-dir="." --output="package-2"
         dir
       shell: pwsh
     - name: Publish exported dependencies
