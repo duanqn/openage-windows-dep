@@ -91,7 +91,7 @@ jobs:
               continue
             }
 
-            Copy-Item -Path $package\* -Recurse -Destination . -Force
+            Get-ChildItem -Path "$package\*" -Recurse | Move-Item -Destination .
           }
           echo (Get-ChildItem -Path . -Recurse -File).FullName
           cd ..
