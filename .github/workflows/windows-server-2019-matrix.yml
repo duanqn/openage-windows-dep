@@ -91,13 +91,14 @@ jobs:
               continue
             }
 
-            Get-ChildItem -Path "$package\*" -Recurse | Move-Item -Destination .
+            Move-Item -Path "$package" -Destination .
           }
           echo (Get-ChildItem -Path . -Recurse -File).FullName
           cd ..
           $file_name = $dir_name
           $file_name += ".zip"
           Compress-Archive -Path $dir_name -DestinationPath $file_name
+          Remove-Item $dir_name -Recurse -Force
         }
       shell: pwsh
 
